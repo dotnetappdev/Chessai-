@@ -32,7 +32,6 @@ class ChessGameWindow(QMainWindow):
         
         self.init_ui()
         self.update_status()
-        self.update_training_data_label()
         
     def init_ui(self):
         """Initialize the user interface"""
@@ -189,6 +188,9 @@ class ChessGameWindow(QMainWindow):
         
         # Add stretch to push everything up
         right_layout.addStretch()
+        
+        # Initialize training data label after UI is ready
+        self.update_training_data_label()
         
     def on_player_move(self, move_uci):
         """Handle player move from 3D board"""

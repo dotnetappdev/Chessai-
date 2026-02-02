@@ -23,6 +23,7 @@ class ChessAI:
     # Training constants
     MIN_BATCH_SIZE = 32  # Minimum positions needed for training
     GAMES_BEFORE_TRAINING = 5  # Train after this many completed games
+    MOVE_WEIGHT_THRESHOLD = 40.0  # Moves before full outcome weight applied
     
     def __init__(self, model_path: str = 'models/chess_ai.keras', auto_train: bool = True):
         self.model_path = model_path
@@ -312,8 +313,7 @@ class ChessAI:
                     # Evaluation tapers based on move count and outcome
                     # Early game (moves 0-40): gradually increase weight toward outcome
                     # This reflects that early moves matter less for final result
-                    MOVE_WEIGHT_THRESHOLD = 40.0
-                    move_weight = min(1.0, move_count / MOVE_WEIGHT_THRESHOLD)
+                    move_weight = min(1.0, move_count / self.MOVE_WEIGHT_THRESHOLD)
                     eval_value = outcome_value * move_weight
                     
                     self.training_data.append((tensor, eval_value))
@@ -365,7 +365,7 @@ class ChessAI:
                 tensor = self.board_to_tensor(board)
                 
                 # Evaluation tapers based on move count and outcome
-                move_weight = min(1.0, move_count / 40.0)
+                move_weight = min(1.0, move_count / self.MOVE_WEIGHT_THRESHOLD)
                 eval_value = outcome_value * move_weight
                 
                 self.training_data.append((tensor, eval_value))
