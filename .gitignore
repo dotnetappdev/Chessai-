@@ -16,3 +16,5 @@ models/*.h5
 models/*.keras
 *.pgn
 !example.pgn
+*.spec.backup
+games/

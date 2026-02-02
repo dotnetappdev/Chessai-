@@ -2,10 +2,18 @@ import chess
 import numpy as np
 import random
 import os
-from typing import Optional, List, Tuple
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+from typing import Optional, List, Tuple, Any
+
+# Try to import TensorFlow, but make it optional
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.keras import layers
+    HAS_TENSORFLOW = True
+except ImportError:
+    HAS_TENSORFLOW = False
+    keras = None  # For type hints
+    print("Warning: TensorFlow not available. AI will use basic evaluation only.")
 
 class ChessAI:
     """Chess AI with learning capabilities"""
@@ -16,17 +24,24 @@ class ChessAI:
         self.training_data = []
         self.max_training_data = 10000
         
-        # Try to load existing model
-        if os.path.exists(model_path):
-            try:
-                self.load_model()
-            except:
+        # Only try to use neural network if TensorFlow is available
+        if HAS_TENSORFLOW:
+            # Try to load existing model
+            if os.path.exists(model_path):
+                try:
+                    self.load_model()
+                except:
+                    self.model = self._build_model()
+            else:
                 self.model = self._build_model()
         else:
-            self.model = self._build_model()
+            print("Running without neural network - using material evaluation only")
     
-    def _build_model(self) -> keras.Model:
+    def _build_model(self) -> Optional[Any]:
         """Build neural network model for chess evaluation"""
+        if not HAS_TENSORFLOW:
+            return None
+            
         model = keras.Sequential([
             layers.Input(shape=(8, 8, 12)),  # 8x8 board, 12 piece types
             layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
@@ -185,6 +200,9 @@ class ChessAI:
     
     def train(self, epochs: int = 10, batch_size: int = 32) -> dict:
         """Train the model on recorded positions"""
+        if not HAS_TENSORFLOW:
+            return {'loss': [], 'mae': [], 'error': 'TensorFlow not available'}
+            
         if len(self.training_data) < batch_size:
             return {'loss': [], 'mae': []}
         
@@ -209,10 +227,14 @@ class ChessAI:
     
     def save_model(self):
         """Save model to disk"""
+        if not HAS_TENSORFLOW or self.model is None:
+            raise Exception("TensorFlow not available or model not initialized")
         os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
         self.model.save(self.model_path)
     
     def load_model(self):
         """Load model from disk"""
+        if not HAS_TENSORFLOW:
+            raise Exception("TensorFlow not available")
         if os.path.exists(self.model_path):
             self.model = keras.models.load_model(self.model_path)
