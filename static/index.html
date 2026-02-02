@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Chess AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            max-width: 300px;
+        }
+        
+        #info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            max-width: 300px;
+        }
+        
+        h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .status-label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .status-value {
+            color: #333;
+        }
+        
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .game-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .game-controls button {
+            flex: 1;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 200;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    <div id="controls">
+        <h2>Game Controls</h2>
+        
+        <div class="status">
+            <span class="status-label">Turn:</span>
+            <span class="status-value" id="turn">White</span>
+        </div>
+        
+        <div class="status">
+            <span class="status-label">Mode:</span>
+            <span class="status-value" id="mode">Player vs AI</span>
+        </div>
+        
+        <div class="button-group">
+            <select id="modeSelect">
+                <option value="player_vs_ai">Player vs AI</option>
+                <option value="ai_vs_ai">AI vs AI</option>
+            </select>
+            <button onclick="changeMode()">Change Mode</button>
+        </div>
+        
+        <div class="game-controls">
+            <button onclick="resetGame()">New Game</button>
+            <button onclick="aiMove()" id="aiMoveBtn">AI Move</button>
+        </div>
+        
+        <h2 style="margin-top: 20px;">AI Self-Play</h2>
+        <div class="button-group">
+            <button onclick="startSelfPlay()" id="selfPlayBtn">Start Self-Play</button>
+            <button onclick="stopSelfPlay()" id="stopPlayBtn" disabled>Stop</button>
+        </div>
+        
+        <h2 style="margin-top: 20px;">Save/Load</h2>
+        <div class="button-group">
+            <input type="text" id="saveFilename" placeholder="game.pgn">
+            <button onclick="saveGame()">Save Game</button>
+            <select id="loadSelect">
+                <option value="">Select game...</option>
+            </select>
+            <button onclick="loadGame()">Load Game</button>
+        </div>
+        
+        <h2 style="margin-top: 20px;">AI Training</h2>
+        <div class="button-group">
+            <button onclick="trainAI()">Train AI (10 epochs)</button>
+            <button onclick="saveModel()">Save Model</button>
+            <button onclick="loadModel()">Load Model</button>
+        </div>
+    </div>
+    
+    <div id="info">
+        <h2>Game Status</h2>
+        <div id="gameStatus" class="status">
+            Game in progress
+        </div>
+        <div id="message"></div>
+        <div id="moveHistory" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
+            <h3 style="font-size: 14px; margin-bottom: 10px;">Move History</h3>
+            <div id="moves" style="font-size: 12px; color: #666;"></div>
+        </div>
+    </div>
+    
+    <div id="loading" class="hidden">
+        <div class="spinner"></div>
+        <div>Loading...</div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="static/chess3d.js"></script>
+</body>
+</html>

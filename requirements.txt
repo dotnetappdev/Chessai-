@@ -1,0 +1,5 @@
+flask==3.0.0
+flask-cors==4.0.0
+python-chess==1.999
+numpy==1.24.3
+tensorflow==2.15.0
