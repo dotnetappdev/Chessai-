@@ -14,6 +14,7 @@ build/
 node_modules/
 models/*.h5
 models/*.keras
+!models/initial_training_data.pkl
 *.pgn
 !example_games.pgn
 *.spec.backup

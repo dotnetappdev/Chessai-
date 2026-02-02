@@ -3,6 +3,7 @@ import chess.pgn
 import numpy as np
 import random
 import os
+import pickle
 from typing import Optional, List, Tuple, Any
 from io import StringIO
 
@@ -22,17 +23,22 @@ class ChessAI:
     
     # Training constants
     MIN_BATCH_SIZE = 32  # Minimum positions needed for training
-    GAMES_BEFORE_TRAINING = 5  # Train after this many completed games
+    GAMES_BEFORE_TRAINING = 5  # Train after this many completed games (normal mode)
     MOVE_WEIGHT_THRESHOLD = 40.0  # Moves before full outcome weight applied
     
-    def __init__(self, model_path: str = 'models/chess_ai.keras', auto_train: bool = True):
+    def __init__(self, model_path: str = 'models/chess_ai.keras', auto_train: bool = True, 
+                 train_every_game: bool = False):
         self.model_path = model_path
         self.model = None
         self.training_data = []
         self.max_training_data = 10000
         self.auto_train = auto_train
+        self.train_every_game = train_every_game  # If True, train after every game (for self-play)
         self.games_since_training = 0
-        self.games_before_training = self.GAMES_BEFORE_TRAINING
+        self.games_before_training = 1 if train_every_game else self.GAMES_BEFORE_TRAINING
+        
+        # Load initial training data if available
+        self._load_initial_training_data()
         
         # Only try to use neural network if TensorFlow is available
         if HAS_TENSORFLOW:
@@ -46,6 +52,18 @@ class ChessAI:
                 self.model = self._build_model()
         else:
             print("Running without neural network - using material evaluation only")
+    
+    def _load_initial_training_data(self):
+        """Load initial training data from example games if available"""
+        initial_data_path = 'models/initial_training_data.pkl'
+        if os.path.exists(initial_data_path):
+            try:
+                with open(initial_data_path, 'rb') as f:
+                    initial_data = pickle.load(f)
+                self.training_data = initial_data[:self.max_training_data]
+                print(f"Loaded {len(self.training_data)} initial training positions from example games")
+            except Exception as e:
+                print(f"Could not load initial training data: {e}")
     
     def _build_model(self) -> Optional[Any]:
         """Build neural network model for chess evaluation"""

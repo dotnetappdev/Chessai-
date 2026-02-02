@@ -7,7 +7,11 @@ A sophisticated 3D chess game with AI capabilities that can learn and improve th
 - **3D Chess Board**: Fully interactive 3D chess board with realistic piece models using OpenGL
 - **AI Opponent**: Play against an AI that uses minimax algorithm with alpha-beta pruning
 - **AI Learning**: Neural network-based evaluation that learns from games
-- **Automatic Training**: AI automatically improves after every 5 games played
+- **Pre-trained Model**: Comes with initial training data from famous grandmaster games
+- **Automatic Training**: AI automatically improves after games
+- **Flexible Training Modes**:
+  - Train every game (ideal for self-play)
+  - Train every 5 games (default for regular play)
 - **Learn from Grandmaster Games**: Load PGN files from famous games to train the AI
 - **Self-Play Mode**: Watch the AI play against itself to train and improve
 - **Game Modes**:
@@ -112,9 +116,10 @@ python main.py
 
 #### AI vs AI Mode (Self-Play)
 1. Select "AI vs AI" from the mode dropdown
-2. Click "Start Self-Play" to watch the AI play against itself
-3. Click "Stop Self-Play" to pause
-4. This mode is useful for generating training data
+2. Check "Train after each self-play game" to enable training after every game (recommended)
+3. Click "Start Self-Play" to watch the AI play against itself
+4. Click "Stop Self-Play" to pause
+5. This mode is useful for generating training data and improving the AI quickly
 
 ### 3D Controls
 
@@ -139,8 +144,14 @@ python main.py
 
 The AI uses a neural network to evaluate chess positions and can improve through training.
 
+#### Pre-trained Model
+- The AI comes with initial training data from 173 positions extracted from famous grandmaster games
+- This provides a solid starting point for the AI's learning
+- To create a fully trained model with TensorFlow installed, run: `python pretrain_model.py`
+
 #### Automatic Training
-- After every 5 completed games, the AI automatically trains itself
+- **Regular Play**: AI trains after every 5 completed games
+- **Self-Play Mode**: Enable "Train after each self-play game" checkbox to train after EVERY game
 - Training uses positions encountered during play
 - The model is automatically saved after training
 - No manual intervention needed - just play!
@@ -182,18 +193,40 @@ The AI uses a neural network to evaluate chess positions and can improve through
 
 ```
 Chessai-/
-├── main.py                  # Main application entry point
-├── chess_ai.py             # AI implementation with neural network
-├── chess_board_3d.py       # 3D OpenGL chess board widget
-├── requirements.txt        # Python dependencies
-├── ChessAI.spec           # PyInstaller build configuration
-├── test_components.py     # Component testing
-├── example_games.pgn      # Example grandmaster games for training
-├── README.md              # Complete documentation
-├── QUICKSTART.md          # Quick start guide
-├── BUILD_INSTRUCTIONS.md  # Building executables
-└── PROJECT_SUMMARY.md     # Project overview
+├── main.py                     # Main application entry point
+├── chess_ai.py                # AI implementation with neural network
+├── chess_board_3d.py          # 3D OpenGL chess board widget
+├── pretrain_model.py          # Script to pre-train the AI model
+├── requirements.txt           # Python dependencies
+├── ChessAI.spec              # PyInstaller build configuration
+├── test_components.py        # Component testing
+├── example_games.pgn         # Example grandmaster games for training
+├── models/
+│   └── initial_training_data.pkl  # Pre-loaded training data from example games
+├── README.md                 # Complete documentation
+├── QUICKSTART.md            # Quick start guide
+├── BUILD_INSTRUCTIONS.md    # Building executables
+└── PROJECT_SUMMARY.md       # Project overview
 ```
+
+## Pre-Training the AI (Optional)
+
+If you have TensorFlow installed, you can create a fully pre-trained model:
+
+```bash
+# Install TensorFlow (optional)
+pip install tensorflow
+
+# Run the pre-training script
+python pretrain_model.py
+```
+
+This will:
+1. Load positions from `example_games.pgn`
+2. Train a neural network for 20 epochs
+3. Save the trained model to `models/chess_ai.keras`
+
+**Note**: The AI works without TensorFlow using classical evaluation. Pre-training is optional but recommended for better performance.
 ├── ChessAI.spec          # PyInstaller build configuration
 ├── build.py              # Build script helper
 ├── games/                # Saved games in PGN format (created on first save)

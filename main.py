@@ -120,6 +120,12 @@ class ChessGameWindow(QMainWindow):
         selfplay_layout = QVBoxLayout()
         selfplay_group.setLayout(selfplay_layout)
         
+        # Add checkbox for training after each game
+        from PyQt5.QtWidgets import QCheckBox
+        self.train_per_game_checkbox = QCheckBox('Train after each self-play game')
+        self.train_per_game_checkbox.setChecked(True)  # Default to enabled
+        selfplay_layout.addWidget(self.train_per_game_checkbox)
+        
         self.start_selfplay_btn = QPushButton('Start Self-Play')
         self.start_selfplay_btn.clicked.connect(self.start_self_play)
         selfplay_layout.addWidget(self.start_selfplay_btn)
@@ -271,6 +277,16 @@ class ChessGameWindow(QMainWindow):
         """Start AI self-play"""
         if self.self_play_timer is not None:
             return
+        
+        # Enable train-per-game mode if checkbox is checked
+        train_per_game = self.train_per_game_checkbox.isChecked()
+        self.ai.train_every_game = train_per_game
+        self.ai.games_before_training = 1 if train_per_game else self.ai.GAMES_BEFORE_TRAINING
+        
+        if train_per_game:
+            print("Self-play mode: Training after EACH game")
+        else:
+            print(f"Self-play mode: Training every {self.ai.GAMES_BEFORE_TRAINING} games")
         
         self.start_selfplay_btn.setEnabled(False)
         self.stop_selfplay_btn.setEnabled(True)
