@@ -15,6 +15,6 @@ node_modules/
 models/*.h5
 models/*.keras
 *.pgn
-!example.pgn
+!example_games.pgn
 *.spec.backup
 games/

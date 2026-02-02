@@ -159,10 +159,18 @@ The AI uses a neural network to evaluate chess positions and can improve through
 5. Click "Train AI" after loading to apply the learning
 
 **Where to get PGN files:**
+- Use the included `example_games.pgn` (Fischer, Anderssen famous games)
 - Download from Chess.com (your own games or master games)
 - Export from Lichess (games database)
 - Use chess game databases (e.g., Kasparov, Fischer, Carlsen games)
 - Any standard PGN format file works
+
+**Quick Start with Example Games:**
+```bash
+# The repository includes example_games.pgn with 3 famous games
+# In the app, click "Learn from PGN File" and select example_games.pgn
+# This will add ~90 positions to train from
+```
 
 #### Save/Load Model
 - **Save Model**: Saves the trained neural network to `models/chess_ai.keras`
@@ -174,10 +182,18 @@ The AI uses a neural network to evaluate chess positions and can improve through
 
 ```
 Chessai-/
-├── main.py                # Main application entry point
-├── chess_ai.py           # AI implementation with neural network
-├── chess_board_3d.py     # 3D OpenGL chess board widget
-├── requirements.txt      # Python dependencies
+├── main.py                  # Main application entry point
+├── chess_ai.py             # AI implementation with neural network
+├── chess_board_3d.py       # 3D OpenGL chess board widget
+├── requirements.txt        # Python dependencies
+├── ChessAI.spec           # PyInstaller build configuration
+├── test_components.py     # Component testing
+├── example_games.pgn      # Example grandmaster games for training
+├── README.md              # Complete documentation
+├── QUICKSTART.md          # Quick start guide
+├── BUILD_INSTRUCTIONS.md  # Building executables
+└── PROJECT_SUMMARY.md     # Project overview
+```
 ├── ChessAI.spec          # PyInstaller build configuration
 ├── build.py              # Build script helper
 ├── games/                # Saved games in PGN format (created on first save)
