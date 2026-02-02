@@ -7,6 +7,8 @@ A sophisticated 3D chess game with AI capabilities that can learn and improve th
 - **3D Chess Board**: Fully interactive 3D chess board with realistic piece models using OpenGL
 - **AI Opponent**: Play against an AI that uses minimax algorithm with alpha-beta pruning
 - **AI Learning**: Neural network-based evaluation that learns from games
+- **Automatic Training**: AI automatically improves after every 5 games played
+- **Learn from Grandmaster Games**: Load PGN files from famous games to train the AI
 - **Self-Play Mode**: Watch the AI play against itself to train and improve
 - **Game Modes**:
   - Player vs AI
@@ -137,16 +139,36 @@ python main.py
 
 The AI uses a neural network to evaluate chess positions and can improve through training.
 
-#### Train the AI
+#### Automatic Training
+- After every 5 completed games, the AI automatically trains itself
+- Training uses positions encountered during play
+- The model is automatically saved after training
+- No manual intervention needed - just play!
+
+#### Manual Training
 1. Play some games or run self-play mode to generate training data
-2. Click "Train AI (10 epochs)" to train the neural network
-3. Training uses the positions encountered during play
-4. The AI learns to evaluate positions better over time
+2. Click "Train AI (10 epochs)" to manually train the neural network
+3. The training data counter shows how many positions are available
+4. Training improves the AI's position evaluation
+
+#### Learn from Grandmaster Games
+1. Click "Learn from PGN File" button
+2. Select a PGN file containing chess games (e.g., from Chess.com, Lichess, or famous game databases)
+3. The AI will analyze all games in the file and learn from the positions
+4. Each game adds dozens of training positions
+5. Click "Train AI" after loading to apply the learning
+
+**Where to get PGN files:**
+- Download from Chess.com (your own games or master games)
+- Export from Lichess (games database)
+- Use chess game databases (e.g., Kasparov, Fischer, Carlsen games)
+- Any standard PGN format file works
 
 #### Save/Load Model
 - **Save Model**: Saves the trained neural network to `models/chess_ai.keras`
 - **Load Model**: Loads a previously saved model
 - Models persist between sessions, so your AI's learning is saved
+- Auto-save happens after automatic training
 
 ## Project Structure
 

@@ -1,8 +1,10 @@
 import chess
+import chess.pgn
 import numpy as np
 import random
 import os
 from typing import Optional, List, Tuple, Any
+from io import StringIO
 
 # Try to import TensorFlow, but make it optional
 try:
@@ -18,11 +20,14 @@ except ImportError:
 class ChessAI:
     """Chess AI with learning capabilities"""
     
-    def __init__(self, model_path: str = 'models/chess_ai.keras'):
+    def __init__(self, model_path: str = 'models/chess_ai.keras', auto_train: bool = True):
         self.model_path = model_path
         self.model = None
         self.training_data = []
         self.max_training_data = 10000
+        self.auto_train = auto_train
+        self.games_since_training = 0
+        self.games_before_training = 5  # Train every 5 games
         
         # Only try to use neural network if TensorFlow is available
         if HAS_TENSORFLOW:
@@ -238,3 +243,134 @@ class ChessAI:
             raise Exception("TensorFlow not available")
         if os.path.exists(self.model_path):
             self.model = keras.models.load_model(self.model_path)
+    
+    def on_game_complete(self, result: str):
+        """Called when a game completes - triggers automatic training if enabled"""
+        if not HAS_TENSORFLOW or not self.auto_train:
+            return
+        
+        self.games_since_training += 1
+        
+        # Train after accumulating enough games
+        if self.games_since_training >= self.games_before_training:
+            if len(self.training_data) >= 32:  # Minimum batch size
+                print(f"Auto-training after {self.games_since_training} games...")
+                try:
+                    self.train(epochs=5, batch_size=32)
+                    self.save_model()
+                    print("Auto-training completed and model saved.")
+                except Exception as e:
+                    print(f"Auto-training failed: {e}")
+                self.games_since_training = 0
+    
+    def learn_from_pgn_file(self, pgn_file_path: str) -> int:
+        """Learn from a PGN file containing chess games (e.g., grandmaster games)
+        
+        Args:
+            pgn_file_path: Path to PGN file
+            
+        Returns:
+            Number of positions added to training data
+        """
+        if not os.path.exists(pgn_file_path):
+            raise FileNotFoundError(f"PGN file not found: {pgn_file_path}")
+        
+        positions_added = 0
+        
+        with open(pgn_file_path, 'r') as f:
+            while True:
+                game = chess.pgn.read_game(f)
+                if game is None:
+                    break
+                
+                # Get result to determine evaluation
+                result = game.headers.get("Result", "*")
+                
+                # Determine outcome value
+                if result == "1-0":  # White wins
+                    outcome_value = 1.0
+                elif result == "0-1":  # Black wins
+                    outcome_value = -1.0
+                else:  # Draw or unknown
+                    outcome_value = 0.0
+                
+                # Replay game and record positions
+                board = chess.Board()
+                move_count = 0
+                
+                for move in game.mainline_moves():
+                    # Record position before move
+                    tensor = self.board_to_tensor(board)
+                    
+                    # Evaluation tapers based on move count and outcome
+                    # Early game: closer to 0, endgame: closer to outcome
+                    move_weight = min(1.0, move_count / 40.0)
+                    eval_value = outcome_value * move_weight
+                    
+                    self.training_data.append((tensor, eval_value))
+                    positions_added += 1
+                    
+                    # Limit training data size
+                    if len(self.training_data) > self.max_training_data:
+                        self.training_data.pop(0)
+                    
+                    board.push(move)
+                    move_count += 1
+        
+        return positions_added
+    
+    def learn_from_pgn_string(self, pgn_string: str) -> int:
+        """Learn from a PGN string containing chess games
+        
+        Args:
+            pgn_string: PGN formatted string
+            
+        Returns:
+            Number of positions added to training data
+        """
+        positions_added = 0
+        pgn_io = StringIO(pgn_string)
+        
+        while True:
+            game = chess.pgn.read_game(pgn_io)
+            if game is None:
+                break
+            
+            # Get result to determine evaluation
+            result = game.headers.get("Result", "*")
+            
+            # Determine outcome value
+            if result == "1-0":  # White wins
+                outcome_value = 1.0
+            elif result == "0-1":  # Black wins
+                outcome_value = -1.0
+            else:  # Draw or unknown
+                outcome_value = 0.0
+            
+            # Replay game and record positions
+            board = chess.Board()
+            move_count = 0
+            
+            for move in game.mainline_moves():
+                # Record position before move
+                tensor = self.board_to_tensor(board)
+                
+                # Evaluation tapers based on move count and outcome
+                move_weight = min(1.0, move_count / 40.0)
+                eval_value = outcome_value * move_weight
+                
+                self.training_data.append((tensor, eval_value))
+                positions_added += 1
+                
+                # Limit training data size
+                if len(self.training_data) > self.max_training_data:
+                    self.training_data.pop(0)
+                
+                board.push(move)
+                move_count += 1
+        
+        return positions_added
+    
+    def get_training_data_size(self) -> int:
+        """Get the current size of training data"""
+        return len(self.training_data)

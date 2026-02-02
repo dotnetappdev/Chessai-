@@ -32,6 +32,7 @@ class ChessGameWindow(QMainWindow):
         
         self.init_ui()
         self.update_status()
+        self.update_training_data_label()
         
     def init_ui(self):
         """Initialize the user interface"""
@@ -151,9 +152,18 @@ class ChessGameWindow(QMainWindow):
         training_layout = QVBoxLayout()
         training_group.setLayout(training_layout)
         
+        # Auto-train label
+        self.training_data_label = QLabel('Training data: 0 positions')
+        training_layout.addWidget(self.training_data_label)
+        
         train_btn = QPushButton('Train AI (10 epochs)')
         train_btn.clicked.connect(self.train_ai)
         training_layout.addWidget(train_btn)
+        
+        # Load grandmaster games button
+        load_pgn_btn = QPushButton('Learn from PGN File')
+        load_pgn_btn.clicked.connect(self.load_pgn_for_training)
+        training_layout.addWidget(load_pgn_btn)
         
         save_model_btn = QPushButton('Save Model')
         save_model_btn.clicked.connect(self.save_model)
@@ -191,8 +201,11 @@ class ChessGameWindow(QMainWindow):
                 self.update_status()
                 self.chess_board_3d.update_board(self.board)
                 
+                # Check if game is over after this move
+                if self.board.is_game_over():
+                    self.on_game_complete()
                 # If in player vs AI mode, make AI move
-                if self.game_mode == "player_vs_ai" and not self.board.is_game_over():
+                elif self.game_mode == "player_vs_ai":
                     QTimer.singleShot(500, self.make_ai_move)
             else:
                 QMessageBox.warning(self, 'Invalid Move', 'That move is not legal!')
@@ -212,11 +225,27 @@ class ChessGameWindow(QMainWindow):
                 self.update_move_history()
                 self.update_status()
                 self.chess_board_3d.update_board(self.board)
+                
+                # Check if game is over after AI move
+                if self.board.is_game_over():
+                    self.on_game_complete()
         except Exception as e:
             QMessageBox.critical(self, 'Error', f'AI move error: {str(e)}')
     
+    def on_game_complete(self):
+        """Called when a game completes"""
+        result = self.board.result()
+        # Trigger AI auto-training
+        self.ai.on_game_complete(result)
+        # Update training data label
+        self.update_training_data_label()
+    
     def new_game(self):
         """Start a new game"""
+        # Check if current game is complete
+        if self.board.move_stack and self.board.is_game_over():
+            self.on_game_complete()
+        
         reply = QMessageBox.question(self, 'New Game', 
                                      'Start a new game? Current game will be lost.',
                                      QMessageBox.Yes | QMessageBox.No)
@@ -260,6 +289,7 @@ class ChessGameWindow(QMainWindow):
     def self_play_move(self):
         """Make one self-play move"""
         if self.board.is_game_over():
+            self.on_game_complete()
             self.stop_self_play()
             return
         
@@ -334,12 +364,42 @@ class ChessGameWindow(QMainWindow):
             
             loss = history.get('loss', [])
             final_loss = loss[-1] if loss else 'N/A'
+            self.update_training_data_label()
             QMessageBox.information(self, 'Training Complete', 
                                    f'AI training completed!\nFinal loss: {final_loss:.4f}' if isinstance(final_loss, float) else 'AI training completed!')
         except Exception as e:
             QMessageBox.critical(self, 'Error', f'Error training AI: {str(e)}')
         finally:
             progress.close()
+    
+    def load_pgn_for_training(self):
+        """Load PGN file to train AI from grandmaster games"""
+        filename, _ = QFileDialog.getOpenFileName(
+            self, 'Load PGN for Training', '', 'PGN Files (*.pgn);;All Files (*)'
+        )
+        
+        if filename:
+            progress = QProgressDialog('Learning from PGN file...', 'Cancel', 0, 0, self)
+            progress.setWindowModality(Qt.WindowModal)
+            progress.show()
+            
+            try:
+                positions_added = self.ai.learn_from_pgn_file(filename)
+                progress.close()
+                self.update_training_data_label()
+                
+                QMessageBox.information(self, 'Success', 
+                                       f'Loaded {positions_added} positions from PGN file!\n'
+                                       f'Total training data: {self.ai.get_training_data_size()} positions\n\n'
+                                       f'Click "Train AI" to train the model with this data.')
+            except Exception as e:
+                progress.close()
+                QMessageBox.critical(self, 'Error', f'Error loading PGN for training: {str(e)}')
+    
+    def update_training_data_label(self):
+        """Update the training data label"""
+        data_size = self.ai.get_training_data_size()
+        self.training_data_label.setText(f'Training data: {data_size} positions')
     
     def save_model(self):
         """Save AI model"""
