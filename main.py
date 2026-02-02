@@ -204,8 +204,8 @@ class ChessGameWindow(QMainWindow):
                 # Check if game is over after this move
                 if self.board.is_game_over():
                     self.on_game_complete()
-                # If in player vs AI mode, make AI move
                 elif self.game_mode == "player_vs_ai":
+                    # Make AI response move
                     QTimer.singleShot(500, self.make_ai_move)
             else:
                 QMessageBox.warning(self, 'Invalid Move', 'That move is not legal!')
@@ -242,14 +242,14 @@ class ChessGameWindow(QMainWindow):
     
     def new_game(self):
         """Start a new game"""
-        # Check if current game is complete
-        if self.board.move_stack and self.board.is_game_over():
-            self.on_game_complete()
-        
         reply = QMessageBox.question(self, 'New Game', 
                                      'Start a new game? Current game will be lost.',
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
+            # Check if current game is complete and trigger training
+            if self.board.move_stack and self.board.is_game_over():
+                self.on_game_complete()
+            
             self.board = chess.Board()
             self.move_history = []
             self.update_move_history()

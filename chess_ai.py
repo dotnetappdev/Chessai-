@@ -20,6 +20,10 @@ except ImportError:
 class ChessAI:
     """Chess AI with learning capabilities"""
     
+    # Training constants
+    MIN_BATCH_SIZE = 32  # Minimum positions needed for training
+    GAMES_BEFORE_TRAINING = 5  # Train after this many completed games
+    
     def __init__(self, model_path: str = 'models/chess_ai.keras', auto_train: bool = True):
         self.model_path = model_path
         self.model = None
@@ -27,7 +31,7 @@ class ChessAI:
         self.max_training_data = 10000
         self.auto_train = auto_train
         self.games_since_training = 0
-        self.games_before_training = 5  # Train every 5 games
+        self.games_before_training = self.GAMES_BEFORE_TRAINING
         
         # Only try to use neural network if TensorFlow is available
         if HAS_TENSORFLOW:
@@ -253,10 +257,10 @@ class ChessAI:
         
         # Train after accumulating enough games
         if self.games_since_training >= self.games_before_training:
-            if len(self.training_data) >= 32:  # Minimum batch size
+            if len(self.training_data) >= self.MIN_BATCH_SIZE:
                 print(f"Auto-training after {self.games_since_training} games...")
                 try:
-                    self.train(epochs=5, batch_size=32)
+                    self.train(epochs=5, batch_size=self.MIN_BATCH_SIZE)
                     self.save_model()
                     print("Auto-training completed and model saved.")
                 except Exception as e:
@@ -265,6 +269,9 @@ class ChessAI:
     
     def learn_from_pgn_file(self, pgn_file_path: str) -> int:
         """Learn from a PGN file containing chess games (e.g., grandmaster games)
+        
+        Supports standard PGN format compatible with Chess.com, Lichess, ChessBase, etc.
+        Games should include Result header (1-0, 0-1, 1/2-1/2, or *).
         
         Args:
             pgn_file_path: Path to PGN file
@@ -303,8 +310,10 @@ class ChessAI:
                     tensor = self.board_to_tensor(board)
                     
                     # Evaluation tapers based on move count and outcome
-                    # Early game: closer to 0, endgame: closer to outcome
-                    move_weight = min(1.0, move_count / 40.0)
+                    # Early game (moves 0-40): gradually increase weight toward outcome
+                    # This reflects that early moves matter less for final result
+                    MOVE_WEIGHT_THRESHOLD = 40.0
+                    move_weight = min(1.0, move_count / MOVE_WEIGHT_THRESHOLD)
                     eval_value = outcome_value * move_weight
                     
                     self.training_data.append((tensor, eval_value))
