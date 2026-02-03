@@ -4,6 +4,7 @@ import numpy as np
 import random
 import os
 import pickle
+import time
 from typing import Optional, List, Tuple, Any
 from io import StringIO
 
@@ -36,6 +37,14 @@ class ChessAI:
         self.train_every_game = train_every_game  # If True, train after every game (for self-play)
         self.games_since_training = 0
         self.games_before_training = 1 if train_every_game else self.GAMES_BEFORE_TRAINING
+        
+        # AI Statistics for real-time display
+        self.last_evaluation = 0.0
+        self.last_move_time = 0.0
+        self.positions_evaluated = 0
+        self.search_depth = 2
+        self.best_move_found = None
+        self.current_thinking = False
         
         # Load initial training data if available
         self._load_initial_training_data()
@@ -153,8 +162,16 @@ class ChessAI:
     
     def get_best_move(self, board: chess.Board, depth: int = 2) -> Optional[chess.Move]:
         """Get best move using minimax with alpha-beta pruning"""
+        import time
+        start_time = time.time()
+        
+        self.current_thinking = True
+        self.positions_evaluated = 0
+        self.search_depth = depth
+        
         legal_moves = list(board.legal_moves)
         if not legal_moves:
+            self.current_thinking = False
             return None
         
         best_move = None
@@ -181,6 +198,12 @@ class ChessAI:
                     best_move = move
                 beta = min(beta, value)
         
+        # Update statistics
+        self.last_evaluation = best_value
+        self.best_move_found = best_move
+        self.last_move_time = time.time() - start_time
+        self.current_thinking = False
+        
         # Store position for training
         self._record_position(board, best_move, best_value)
         
@@ -189,6 +212,8 @@ class ChessAI:
     def _minimax(self, board: chess.Board, depth: int, alpha: float, beta: float, 
                  maximizing: bool) -> float:
         """Minimax algorithm with alpha-beta pruning"""
+        self.positions_evaluated += 1
+        
         if depth == 0 or board.is_game_over():
             return self.evaluate_position(board)
         
@@ -401,3 +426,17 @@ class ChessAI:
     def get_training_data_size(self) -> int:
         """Get the current size of training data"""
         return len(self.training_data)
+    
+    def get_stats(self) -> dict:
+        """Get current AI statistics for display"""
+        return {
+            'evaluation': self.last_evaluation,
+            'move_time': self.last_move_time,
+            'positions_evaluated': self.positions_evaluated,
+            'search_depth': self.search_depth,
+            'best_move': str(self.best_move_found) if self.best_move_found else 'None',
+            'thinking': self.current_thinking,
+            'training_data_size': len(self.training_data),
+            'games_since_training': self.games_since_training,
+            'using_neural_net': HAS_TENSORFLOW and self.model is not None
+        }

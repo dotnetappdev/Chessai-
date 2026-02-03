@@ -84,6 +84,37 @@ class ChessGameWindow(QMainWindow):
         
         right_layout.addWidget(status_group)
         
+        # AI Stats group
+        ai_stats_group = QGroupBox('AI Statistics')
+        ai_stats_layout = QVBoxLayout()
+        ai_stats_group.setLayout(ai_stats_layout)
+        
+        self.ai_eval_label = QLabel('Position Eval: 0.0')
+        self.ai_eval_label.setFont(QFont('Courier', 10))
+        ai_stats_layout.addWidget(self.ai_eval_label)
+        
+        self.ai_move_label = QLabel('Best Move: None')
+        self.ai_move_label.setFont(QFont('Courier', 10))
+        ai_stats_layout.addWidget(self.ai_move_label)
+        
+        self.ai_time_label = QLabel('Think Time: 0.0s')
+        self.ai_time_label.setFont(QFont('Courier', 10))
+        ai_stats_layout.addWidget(self.ai_time_label)
+        
+        self.ai_nodes_label = QLabel('Positions: 0')
+        self.ai_nodes_label.setFont(QFont('Courier', 10))
+        ai_stats_layout.addWidget(self.ai_nodes_label)
+        
+        self.ai_depth_label = QLabel('Search Depth: 2')
+        self.ai_depth_label.setFont(QFont('Courier', 10))
+        ai_stats_layout.addWidget(self.ai_depth_label)
+        
+        self.ai_model_label = QLabel('Model: Classical')
+        self.ai_model_label.setFont(QFont('Courier', 10))
+        ai_stats_layout.addWidget(self.ai_model_label)
+        
+        right_layout.addWidget(ai_stats_group)
+        
         # Game mode group
         mode_group = QGroupBox('Game Mode')
         mode_layout = QVBoxLayout()
@@ -198,6 +229,49 @@ class ChessGameWindow(QMainWindow):
         # Initialize training data label after UI is ready
         self.update_training_data_label()
         
+        # Initialize AI stats display
+        self.update_ai_stats()
+        
+        # Set up timer for periodic AI stats updates
+        self.stats_timer = QTimer()
+        self.stats_timer.timeout.connect(self.update_ai_stats)
+        self.stats_timer.start(500)  # Update every 500ms
+    
+    def update_ai_stats(self):
+        """Update AI statistics display"""
+        stats = self.ai.get_stats()
+        
+        # Position evaluation
+        eval_val = stats['evaluation']
+        if stats['thinking']:
+            self.ai_eval_label.setText(f'Position Eval: Thinking...')
+        else:
+            self.ai_eval_label.setText(f'Position Eval: {eval_val:+.2f}')
+        
+        # Best move
+        best_move = stats['best_move']
+        self.ai_move_label.setText(f'Best Move: {best_move}')
+        
+        # Think time
+        move_time = stats['move_time']
+        self.ai_time_label.setText(f'Think Time: {move_time:.3f}s')
+        
+        # Positions evaluated
+        positions = stats['positions_evaluated']
+        if positions > 1000:
+            self.ai_nodes_label.setText(f'Positions: {positions/1000:.1f}K')
+        else:
+            self.ai_nodes_label.setText(f'Positions: {positions}')
+        
+        # Search depth
+        depth = stats['search_depth']
+        self.ai_depth_label.setText(f'Search Depth: {depth}')
+        
+        # Model type
+        using_nn = stats['using_neural_net']
+        model_type = 'Neural Net' if using_nn else 'Classical'
+        self.ai_model_label.setText(f'Model: {model_type}')
+    
     def on_player_move(self, move_uci):
         """Handle player move from 3D board"""
         try:
@@ -233,6 +307,9 @@ class ChessGameWindow(QMainWindow):
                 self.update_move_history()
                 self.update_status()
                 self.chess_board_3d.update_board(self.board)
+                
+                # Update AI stats immediately after move
+                self.update_ai_stats()
                 
                 # Check if game is over after AI move
                 if self.board.is_game_over():
