@@ -9,7 +9,7 @@ import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QComboBox, 
                              QFileDialog, QMessageBox, QGroupBox, QLineEdit,
-                             QTextEdit, QProgressDialog)
+                             QTextEdit, QProgressDialog, QCheckBox)
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 import chess
@@ -162,7 +162,6 @@ class ChessGameWindow(QMainWindow):
         settings_layout.addWidget(self.theme_combo)
         
         # Sound toggle
-        from PyQt5.QtWidgets import QCheckBox
         self.sound_checkbox = QCheckBox('Enable Sound Effects')
         self.sound_checkbox.setChecked(True)
         self.sound_checkbox.stateChanged.connect(self.toggle_sound)
@@ -197,7 +196,6 @@ class ChessGameWindow(QMainWindow):
         selfplay_group.setLayout(selfplay_layout)
         
         # Add checkbox for training after each game
-        from PyQt5.QtWidgets import QCheckBox
         self.train_per_game_checkbox = QCheckBox('Train after each self-play game')
         self.train_per_game_checkbox.setChecked(True)  # Default to enabled
         selfplay_layout.addWidget(self.train_per_game_checkbox)

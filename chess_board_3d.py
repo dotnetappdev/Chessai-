@@ -117,7 +117,8 @@ class ChessBoard3D(QOpenGLWidget):
             if os.path.exists(filepath):
                 try:
                     self.sounds[sound_type] = QSound(filepath)
-                except:
+                except Exception:
+                    # Sound file exists but can't be loaded - continue without it
                     pass
     
     def play_sound(self, sound_type):
@@ -125,7 +126,8 @@ class ChessBoard3D(QOpenGLWidget):
         if self.sounds_enabled and sound_type in self.sounds:
             try:
                 self.sounds[sound_type].play()
-            except:
+            except Exception:
+                # Silently ignore sound playback errors
                 pass
     
     def set_theme(self, theme_name):
@@ -557,7 +559,8 @@ class ChessBoard3D(QOpenGLWidget):
                     # Start animation
                     self.animate_move(move.from_square, move.to_square, piece)
                     return
-            except:
+            except Exception:
+                # Failed to parse move or trigger animation - fall back to simple update
                 pass
         
         self.board = board
