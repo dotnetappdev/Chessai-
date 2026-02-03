@@ -209,6 +209,28 @@ class ChessAI:
         
         return best_move
     
+    def get_top_moves(self, board: chess.Board, n: int = 3, depth: int = 2) -> List[Tuple[chess.Move, float]]:
+        """Get top N moves with their evaluations"""
+        legal_moves = list(board.legal_moves)
+        if not legal_moves:
+            return []
+        
+        move_evaluations = []
+        
+        for move in legal_moves:
+            board.push(move)
+            value = self._minimax(board, depth - 1, float('-inf'), float('inf'), not board.turn)
+            board.pop()
+            move_evaluations.append((move, value))
+        
+        # Sort by evaluation (descending for white, ascending for black)
+        if board.turn == chess.WHITE:
+            move_evaluations.sort(key=lambda x: x[1], reverse=True)
+        else:
+            move_evaluations.sort(key=lambda x: x[1])
+        
+        return move_evaluations[:n]
+    
     def _minimax(self, board: chess.Board, depth: int, alpha: float, beta: float, 
                  maximizing: bool) -> float:
         """Minimax algorithm with alpha-beta pruning"""
