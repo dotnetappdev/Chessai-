@@ -9,7 +9,7 @@ import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QComboBox, 
                              QFileDialog, QMessageBox, QGroupBox, QLineEdit,
-                             QTextEdit, QProgressDialog)
+                             QTextEdit, QProgressDialog, QCheckBox)
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 import chess
@@ -146,13 +146,56 @@ class ChessGameWindow(QMainWindow):
         
         right_layout.addWidget(controls_group)
         
+        # Visual & Audio Settings group
+        settings_group = QGroupBox('Visual & Audio')
+        settings_layout = QVBoxLayout()
+        settings_group.setLayout(settings_layout)
+        
+        # Theme selector
+        theme_label = QLabel('Board Theme:')
+        settings_layout.addWidget(theme_label)
+        
+        self.theme_combo = QComboBox()
+        for theme_name in ['Classic', 'Modern', 'Wood', 'Metal']:
+            self.theme_combo.addItem(theme_name)
+        self.theme_combo.currentTextChanged.connect(self.change_theme)
+        settings_layout.addWidget(self.theme_combo)
+        
+        # Sound toggle
+        self.sound_checkbox = QCheckBox('Enable Sound Effects')
+        self.sound_checkbox.setChecked(True)
+        self.sound_checkbox.stateChanged.connect(self.toggle_sound)
+        settings_layout.addWidget(self.sound_checkbox)
+        
+        right_layout.addWidget(settings_group)
+        
+        # Analysis Mode group
+        analysis_group = QGroupBox('Analysis Mode')
+        analysis_layout = QVBoxLayout()
+        analysis_group.setLayout(analysis_layout)
+        
+        self.analysis_checkbox = QCheckBox('Enable Analysis Mode')
+        self.analysis_checkbox.setChecked(False)
+        self.analysis_checkbox.stateChanged.connect(self.toggle_analysis_mode)
+        analysis_layout.addWidget(self.analysis_checkbox)
+        
+        self.hint_btn = QPushButton('Show Hint')
+        self.hint_btn.clicked.connect(self.show_hint)
+        analysis_layout.addWidget(self.hint_btn)
+        
+        self.suggestion_label = QLabel('Top moves:\n(Enable analysis mode)')
+        self.suggestion_label.setFont(QFont('Courier', 9))
+        self.suggestion_label.setWordWrap(True)
+        analysis_layout.addWidget(self.suggestion_label)
+        
+        right_layout.addWidget(analysis_group)
+        
         # Self-play group
         selfplay_group = QGroupBox('AI Self-Play')
         selfplay_layout = QVBoxLayout()
         selfplay_group.setLayout(selfplay_layout)
         
         # Add checkbox for training after each game
-        from PyQt5.QtWidgets import QCheckBox
         self.train_per_game_checkbox = QCheckBox('Train after each self-play game')
         self.train_per_game_checkbox.setChecked(True)  # Default to enabled
         selfplay_layout.addWidget(self.train_per_game_checkbox)
@@ -272,6 +315,66 @@ class ChessGameWindow(QMainWindow):
         model_type = 'Neural Net' if using_nn else 'Classical'
         self.ai_model_label.setText(f'Model: {model_type}')
     
+    def change_theme(self, theme_name):
+        """Change the board theme"""
+        self.chess_board_3d.set_theme(theme_name)
+    
+    def toggle_sound(self, state):
+        """Toggle sound effects"""
+        self.chess_board_3d.sounds_enabled = (state == 2)  # Qt.Checked = 2
+    
+    def toggle_analysis_mode(self, state):
+        """Toggle analysis mode"""
+        enabled = (state == 2)
+        self.chess_board_3d.set_analysis_mode(enabled)
+        
+        if enabled:
+            self.update_analysis_suggestions()
+        else:
+            self.suggestion_label.setText('Top moves:\n(Enable analysis mode)')
+            self.chess_board_3d.set_suggested_moves([])
+    
+    def show_hint(self):
+        """Show a hint for the current position"""
+        if self.board.is_game_over():
+            QMessageBox.information(self, 'Hint', 'Game is over!')
+            return
+        
+        try:
+            # Get best move from AI
+            move = self.ai.get_best_move(self.board)
+            if move:
+                from_sq = chess.square_name(move.from_square)
+                to_sq = chess.square_name(move.to_square)
+                QMessageBox.information(self, 'Hint', 
+                                      f'Suggested move: {move.uci()}\n'
+                                      f'From {from_sq} to {to_sq}')
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', f'Error getting hint: {str(e)}')
+    
+    def update_analysis_suggestions(self):
+        """Update move suggestions in analysis mode"""
+        if not self.analysis_checkbox.isChecked() or self.board.is_game_over():
+            return
+        
+        try:
+            # Get top 3 moves from AI
+            suggestions = self.ai.get_top_moves(self.board, n=3)
+            
+            if suggestions:
+                text = 'Top moves:\n'
+                for i, (move, eval_score) in enumerate(suggestions, 1):
+                    text += f'{i}. {move.uci()} ({eval_score:+.2f})\n'
+                self.suggestion_label.setText(text)
+                
+                # Highlight suggestions on board
+                move_ucis = [move.uci() for move, _ in suggestions]
+                self.chess_board_3d.set_suggested_moves(move_ucis)
+            else:
+                self.suggestion_label.setText('Top moves:\nNo suggestions')
+        except Exception as e:
+            self.suggestion_label.setText(f'Top moves:\nError: {str(e)}')
+    
     def on_player_move(self, move_uci):
         """Handle player move from 3D board"""
         try:
@@ -281,7 +384,11 @@ class ChessGameWindow(QMainWindow):
                 self.move_history.append(move_uci)
                 self.update_move_history()
                 self.update_status()
-                self.chess_board_3d.update_board(self.board)
+                self.chess_board_3d.update_board(self.board, move_uci)
+                
+                # Update analysis if enabled
+                if self.analysis_checkbox.isChecked():
+                    QTimer.singleShot(400, self.update_analysis_suggestions)
                 
                 # Check if game is over after this move
                 if self.board.is_game_over():
@@ -306,10 +413,14 @@ class ChessGameWindow(QMainWindow):
                 self.move_history.append(move.uci())
                 self.update_move_history()
                 self.update_status()
-                self.chess_board_3d.update_board(self.board)
+                self.chess_board_3d.update_board(self.board, move.uci())
                 
                 # Update AI stats immediately after move
                 self.update_ai_stats()
+                
+                # Update analysis if enabled
+                if self.analysis_checkbox.isChecked():
+                    QTimer.singleShot(400, self.update_analysis_suggestions)
                 
                 # Check if game is over after AI move
                 if self.board.is_game_over():

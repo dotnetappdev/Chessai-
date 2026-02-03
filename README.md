@@ -5,6 +5,10 @@ A sophisticated 3D chess game with AI capabilities that can learn and improve th
 ## Features
 
 - **3D Chess Board**: Fully interactive 3D chess board with realistic piece models using OpenGL
+- **Move Animations**: Smooth animated piece movements with arc motion for better visual feedback
+- **Sound Effects**: Audio feedback for moves, captures, checks, and checkmate
+- **Custom Themes**: Choose from multiple visual themes (Classic, Modern, Wood, Metal)
+- **Analysis Mode**: Display top 3 move suggestions with evaluations in real-time
 - **AI Opponent**: Play against an AI that uses minimax algorithm with alpha-beta pruning
 - **AI Learning**: Neural network-based evaluation that learns from games
 - **Pre-trained Model**: Comes with initial training data from famous grandmaster games
@@ -127,6 +131,39 @@ python main.py
 - **Zoom**: Use mouse wheel to zoom in/out
 - **Select Piece**: Left-click on a piece
 - **Make Move**: Left-click on a legal move square (highlighted in green)
+
+### Visual & Audio Settings
+
+#### Board Themes
+1. Select from the theme dropdown in the Visual & Audio section:
+   - **Classic**: Traditional brown and cream colors with sky blue background
+   - **Modern**: Contemporary gray and white with dark background
+   - **Wood**: Warm wooden tones for a natural look
+   - **Metal**: Sleek metallic colors for a modern aesthetic
+
+#### Sound Effects
+- Toggle sound effects on/off with the "Enable Sound Effects" checkbox
+- Different sounds for:
+  - Regular moves (soft click)
+  - Captures (sharper click)
+  - Check (warning tone)
+  - Checkmate (victory tone)
+- Sound files are automatically generated on first run
+
+### Analysis Mode
+
+The analysis mode helps you learn by showing the AI's recommended moves:
+
+1. Check "Enable Analysis Mode" to activate
+2. The board will highlight suggested move destinations in light blue
+3. The "Top moves" panel shows the 3 best moves with their evaluations
+4. Click "Show Hint" at any time for a popup with the best move suggestion
+5. Move evaluations update automatically after each move
+
+**Understanding Evaluations:**
+- Positive values favor White
+- Negative values favor Black
+- Values are in approximate pawn units (e.g., +3.0 = White is up 3 pawns worth of material)
 
 ### Saving and Loading Games
 
@@ -366,10 +403,9 @@ Possible improvements for future versions:
 - Opening book integration
 - Endgame tablebase support
 - Network multiplayer support (without web browser)
-- Move animations
-- Sound effects
-- Analysis mode with move suggestions
-- Custom piece designs and themes
+- Additional board themes and piece styles
+- Move history navigation (undo/redo)
+- Save/load multiple game formats
 - Installer/Setup wizard
 
 ## License
